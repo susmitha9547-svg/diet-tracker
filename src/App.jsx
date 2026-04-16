@@ -8,6 +8,12 @@ const ALTERNATIVES = {
     { id:"a_wu_3", text:"1 glass green tea + 5 soaked raisins + 2 almonds" },
     { id:"a_wu_4", text:"1 glass warm cinnamon water + 4 soaked almonds" },
   ],
+  midsnack: [
+    { id:"a_ms_1", text:"4 almonds + 2 walnuts + 1 cashew" },
+    { id:"a_ms_2", text:"4 almonds + 4 pistachios" },
+    { id:"a_ms_3", text:"2 walnuts + 1 tsp pumpkin seeds" },
+    { id:"a_ms_4", text:"4 almonds + 1 tsp sunflower seeds" },
+  ],
   breakfast: [
     { id:"a_br_1", text:"2 moong dal chilla + green chutney" },
     { id:"a_br_2", text:"1 bowl poha with veggies + 1 boiled egg" },
@@ -59,6 +65,7 @@ const ALTERNATIVES = {
 const getMealType = (mealId) => {
   if (mealId==="wakeup")    return "wakeup";
   if (mealId==="breakfast") return "breakfast";
+  if (mealId==="midsnack")  return "midsnack";
   if (mealId==="lunch")     return "lunch";
   if (mealId==="snack")     return "snack";
   if (mealId==="dinner")    return "dinner";
@@ -71,6 +78,7 @@ const DIET_PLAN = {
   Monday:    { color:"#C4756A", gradient:"linear-gradient(135deg,#C4756A,#D4896E)", isVeg:false, meals:[
     { id:"wakeup",    time:"8 AM",     label:"Wake-up",   text:"1 glass warm lemon water + 2 soaked almonds + 2 walnuts" },
     { id:"breakfast", time:"10:30 AM", label:"Breakfast", text:"1 glass milk + 1 bowl makhana + 2 boiled eggs" },
+    { id:"midsnack",  time:"12 PM",    label:"Mid Snack", text:"4 almonds + 2 walnuts (small handful)" },
     { id:"lunch",     time:"2 PM",     label:"Lunch",     text:"1 small bowl egg rice + 1 bowl mixed veggies/salad" },
     { id:"snack",     time:"6 PM",     label:"Snack",     text:"1 glass green tea + 1 katori roasted makhana" },
     { id:"dinner",    time:"8 PM",     label:"Dinner",    text:"1 bowl broccoli soup + 1 boiled egg or small bowl curd" },
@@ -79,6 +87,7 @@ const DIET_PLAN = {
   Tuesday:   { color:"#5A8A6A", gradient:"linear-gradient(135deg,#5A8A6A,#6BA07A)", isVeg:false, meals:[
     { id:"wakeup",    time:"8 AM",     label:"Wake-up",   text:"1 glass green tea + 1 date (with ghee)" },
     { id:"breakfast", time:"10:30 AM", label:"Breakfast", text:"1 bowl boiled peanuts chaat + 2 boiled eggs or 1 small bowl curd" },
+    { id:"midsnack",  time:"12 PM",    label:"Mid Snack", text:"4 almonds + 2 walnuts (small handful)" },
     { id:"lunch",     time:"2 PM",     label:"Lunch",     text:"½ bowl curd rice + 1 bowl dal + cucumber salad" },
     { id:"snack",     time:"6 PM",     label:"Snack",     text:"1 glass green tea + 1 seasonal fruit" },
     { id:"dinner",    time:"8 PM",     label:"Dinner",    text:"Paneer tikka (100g) + cucumber & tomato salad" },
@@ -86,6 +95,7 @@ const DIET_PLAN = {
   Wednesday: { color:"#C4756A", gradient:"linear-gradient(135deg,#C4756A,#D4896E)", isVeg:false, meals:[
     { id:"wakeup",    time:"8 AM",     label:"Wake-up",   text:"1 glass warm lemon water + 2 soaked almonds + 2 walnuts" },
     { id:"breakfast", time:"10:30 AM", label:"Breakfast", text:"3 boiled eggs" },
+    { id:"midsnack",  time:"12 PM",    label:"Mid Snack", text:"4 almonds + 2 walnuts (small handful)" },
     { id:"lunch",     time:"2 PM",     label:"Lunch",     text:"2 roti + 1 bowl egg bhurji + side salad" },
     { id:"snack",     time:"6 PM",     label:"Snack",     text:"1 glass green tea + 1 katori roasted makhana" },
     { id:"dinner",    time:"8 PM",     label:"Dinner",    text:"2 besan chilla + green chutney (not ketchup!)" },
@@ -94,6 +104,7 @@ const DIET_PLAN = {
   Thursday:  { color:"#5A8A6A", gradient:"linear-gradient(135deg,#5A8A6A,#6BA07A)", isVeg:true,  meals:[
     { id:"wakeup",    time:"8 AM",     label:"Wake-up",   text:"1 glass green tea + 1 date (with ghee)" },
     { id:"breakfast", time:"10:30 AM", label:"Breakfast", text:"4 idli + chutney + 1 bowl sambar" },
+    { id:"midsnack",  time:"12 PM",    label:"Mid Snack", text:"4 almonds + 2 walnuts (small handful)" },
     { id:"lunch",     time:"2 PM",     label:"Lunch",     text:"2 mix veg paneer paratha + ½ bowl curd" },
     { id:"snack",     time:"6 PM",     label:"Snack",     text:"1 glass green tea + 1 seasonal fruit" },
     { id:"dinner",    time:"8 PM",     label:"Dinner",    text:"1 bowl mix veg soup + 1 small bowl paneer bhurji or dal" },
@@ -101,6 +112,7 @@ const DIET_PLAN = {
   Friday:    { color:"#C4756A", gradient:"linear-gradient(135deg,#C4756A,#D4896E)", isVeg:false, meals:[
     { id:"wakeup",    time:"8 AM",     label:"Wake-up",   text:"1 glass warm lemon water + 2 soaked almonds + 2 walnuts" },
     { id:"breakfast", time:"10:30 AM", label:"Breakfast", text:"2 vegetable egg omelette" },
+    { id:"midsnack",  time:"12 PM",    label:"Mid Snack", text:"4 almonds + 2 walnuts (small handful)" },
     { id:"lunch",     time:"2 PM",     label:"Lunch",     text:"2 egg bhurji rolls + side salad/cucumber raita" },
     { id:"snack",     time:"6 PM",     label:"Snack",     text:"1 glass green tea + 1 katori roasted makhana" },
     { id:"dinner",    time:"8 PM",     label:"Dinner",    text:"1 bowl dal rice / khichdi" },
@@ -109,6 +121,7 @@ const DIET_PLAN = {
   Saturday:  { color:"#D48B3A", gradient:"linear-gradient(135deg,#D48B3A,#E09E4A)", isVeg:true,  meals:[
     { id:"wakeup",    time:"8 AM",     label:"Wake-up",   text:"1 glass green tea + 1 date (with ghee)" },
     { id:"breakfast", time:"10:30 AM", label:"Breakfast", text:"2 uttapam + chutney + 1 bowl sambar" },
+    { id:"midsnack",  time:"12 PM",    label:"Mid Snack", text:"4 almonds + 2 walnuts (small handful)" },
     { id:"lunch",     time:"2 PM",     label:"Lunch",     text:"½ bowl veg pulao/biryani + 1 bowl raita + salad" },
     { id:"snack",     time:"6 PM",     label:"Snack",     text:"1 glass green tea + 1 seasonal fruit" },
     { id:"dinner",    time:"8 PM",     label:"Dinner",    text:"1 bowl vegetable upma + 1 small bowl curd + small bowl dal" },
@@ -116,6 +129,7 @@ const DIET_PLAN = {
   Sunday:    { color:"#8B6BA0", gradient:"linear-gradient(135deg,#8B6BA0,#A07AB5)", isVeg:false, meals:[
     { id:"wakeup",    time:"8 AM",     label:"Wake-up",   text:"1 glass warm lemon water + 2 soaked almonds + 2 walnuts" },
     { id:"breakfast", time:"10:30 AM", label:"Breakfast", text:"2 plain dosa + chutney + 1 bowl sambar" },
+    { id:"midsnack",  time:"12 PM",    label:"Mid Snack", text:"4 almonds + 2 walnuts (small handful)" },
     { id:"lunch",     time:"2 PM",     label:"Lunch",     text:"2 roti + 1 bowl chicken gravy" },
     { id:"snack",     time:"6 PM",     label:"Snack",     text:"1 glass green tea + 1 katori roasted makhana" },
     { id:"dinner",    time:"8 PM",     label:"Dinner",    text:"Homemade chaat — bhel with sprouts, cucumber, tomato, minimal sev" },
