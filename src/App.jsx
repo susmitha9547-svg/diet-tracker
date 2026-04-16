@@ -147,6 +147,7 @@ export default function DietTracker() {
   const [weightModal,  setWeightModal]  = useState(false);
   const [weightInput,  setWeightInput]  = useState("");
   const [justChecked,  setJustChecked]  = useState(null);
+  const [activeTab,    setActiveTab]    = useState("day");
 
   useEffect(() => {
     const allLogs = {};
@@ -243,7 +244,6 @@ export default function DietTracker() {
   const SwapModal = () => {
     if (!modal) return null;
     const { day, mealId, label } = modal;
-    const [activeTab, setActiveTab] = useState(modal.tab||"day");
     const mealType    = getMealType(mealId);
     const currentSw   = swaps[`${day}_${mealId}`];
     const isLogged    = logs[day]?.[mealId];
@@ -531,10 +531,10 @@ export default function DietTracker() {
                   </div>
                 </div>
                 <div style={{ padding:"0 14px 12px",display:"flex",justifyContent:"flex-end",gap:8 }}>
-                  <button onClick={e=>{ e.stopPropagation(); setModal({day:selectedDay,mealId:meal.id,label:meal.label,tab:"day"}); }} style={{ border:"1.5px solid #EDE0D4",background:"#F8F2EC",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:600,color:isLogged?"#C0A090":"#A08070",cursor:isLogged?"not-allowed":"pointer",opacity:isLogged?0.5:1 }}>
+                  <button onClick={e=>{ e.stopPropagation(); setActiveTab("day"); setModal({day:selectedDay,mealId:meal.id,label:meal.label,tab:"day"}); }} style={{ border:"1.5px solid #EDE0D4",background:"#F8F2EC",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:600,color:isLogged?"#C0A090":"#A08070",cursor:isLogged?"not-allowed":"pointer",opacity:isLogged?0.5:1 }}>
                     📅 Day Swap
                   </button>
-                  <button onClick={e=>{ e.stopPropagation(); setModal({day:selectedDay,mealId:meal.id,label:meal.label,tab:"alt"}); }} style={{ border:isSwapped&&swaps[`${selectedDay}_${meal.id}`]?.type==="alt"?"1.5px solid #D4A870":"1.5px solid #EDE0D4",background:isSwapped&&swaps[`${selectedDay}_${meal.id}`]?.type==="alt"?"#FFF4E8":"#F8F2EC",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:600,color:isLogged?"#C0A090":isSwapped&&swaps[`${selectedDay}_${meal.id}`]?.type==="alt"?"#C4853A":"#A08070",cursor:isLogged?"not-allowed":"pointer",opacity:isLogged?0.5:1 }}>
+                  <button onClick={e=>{ e.stopPropagation(); setActiveTab("alt"); setModal({day:selectedDay,mealId:meal.id,label:meal.label,tab:"alt"}); }} style={{ border:isSwapped&&swaps[`${selectedDay}_${meal.id}`]?.type==="alt"?"1.5px solid #D4A870":"1.5px solid #EDE0D4",background:isSwapped&&swaps[`${selectedDay}_${meal.id}`]?.type==="alt"?"#FFF4E8":"#F8F2EC",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:600,color:isLogged?"#C0A090":isSwapped&&swaps[`${selectedDay}_${meal.id}`]?.type==="alt"?"#C4853A":"#A08070",cursor:isLogged?"not-allowed":"pointer",opacity:isLogged?0.5:1 }}>
                     🍽️ Alternatives
                   </button>
                 </div>
