@@ -137,8 +137,8 @@ const DIET_PLAN = {
   ]},
 };
 
-const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const getTodayKey = () => { const d=new Date(); return DAYS[d.getDay()===0?6:d.getDay()-1]; };
+const DAYS = ["Wednesday","Thursday","Friday","Saturday","Sunday","Monday","Tuesday"];
+const getTodayKey = () => { const d=new Date(); return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]; };
 const K_WEEK    = "diet_week_num";
 const K_LOG     = (w,d) => `diet_log_${w}_${d}`;
 const K_SWAPS   = (w)   => `diet_swaps_${w}`;
@@ -187,9 +187,12 @@ export default function DietTracker() {
       return found ? { text:found.text, isSwapped:true, swapLabel:"Alternative", swapId:sw.val } : { text:meal.text, isSwapped:false };
     }
     if (sw.type==="day") {
+      // sw.val is like "Wednesday_lunch" — get that day's ORIGINAL meal text (not swapped)
       const [srcDay, srcMealId] = sw.val.split("_");
       const srcMeal = DIET_PLAN[srcDay]?.meals.find(m=>m.id===srcMealId);
-      return srcMeal ? { text:srcMeal.text, isSwapped:true, swapLabel:`From ${srcDay}`, swapId:sw.val } : { text:meal.text, isSwapped:false };
+      return srcMeal
+        ? { text:srcMeal.text, isSwapped:true, swapLabel:`Swapped with ${srcDay}`, swapId:sw.val }
+        : { text:meal.text, isSwapped:false };
     }
     return { text:meal.text, isSwapped:false };
   };
@@ -206,16 +209,50 @@ export default function DietTracker() {
       }
       setJustChecked(`${day}_${mealId}`);
       setTimeout(()=>setJustChecked(null), 800);
+    } else {
+      // Un-logging: remove from usedSwaps if this was the source
+      const sw = swaps[`${day}_${mealId}`];
+      if (sw) {
+        const u = usedSwaps.filter(v => v !== sw.val);
+        setUsedSwaps(u); saveUsed(u);
+      }
     }
   };
 
+  // Returns all swap vals currently in use (assigned to any slot, logged or not)
+  const getAssignedSwapVals = (excludeKey) => {
+    return Object.entries(swaps)
+      .filter(([k]) => k !== excludeKey)
+      .map(([, v]) => v.val);
+  };
+
+
   const applySwap = (day, mealId, type, val) => {
-    const updated = { ...swaps, [`${day}_${mealId}`]: { type, val } };
+    let updated = { ...swaps };
+    if (type === "day") {
+      // TRUE two-way swap:
+      // e.g. swapping Tuesday_lunch with Wednesday_lunch means:
+      // Tuesday_lunch → shows Wednesday's lunch
+      // Wednesday_lunch → shows Tuesday's lunch
+      const [srcDay] = val.split("_");
+      updated[`${day}_${mealId}`]    = { type:"day", val:`${srcDay}_${mealId}` };   // target gets source meal
+      updated[`${srcDay}_${mealId}`] = { type:"day", val:`${day}_${mealId}` };      // source gets target meal
+    } else {
+      // Alternatives: one-way replacement only
+      updated[`${day}_${mealId}`] = { type, val };
+    }
     setSwaps(updated); saveSwaps(updated); setModal(null);
   };
 
   const removeSwap = (day, mealId) => {
-    const updated = { ...swaps }; delete updated[`${day}_${mealId}`];
+    const updated = { ...swaps };
+    // If this was a two-way day swap, remove both sides
+    const sw = updated[`${day}_${mealId}`];
+    if (sw?.type === "day") {
+      const [srcDay] = sw.val.split("_");
+      delete updated[`${srcDay}_${mealId}`];
+    }
+    delete updated[`${day}_${mealId}`];
     setSwaps(updated); saveSwaps(updated); setModal(null);
   };
 
@@ -313,21 +350,29 @@ export default function DietTracker() {
                   No other days have a {label} to swap with.
                 </div>
               ) : otherDays.map(srcDay=>{
-                const srcMeal   = DIET_PLAN[srcDay].meals.find(m=>m.id===mealId);
-                const swapVal   = `${srcDay}_${mealId}`;
-                const isCurrent = currentSw?.type==="day" && currentSw?.val===swapVal;
-                const isUsed    = usedSwaps.includes(swapVal) && !isCurrent;
-                const srcPlan   = DIET_PLAN[srcDay];
+                const srcMeal      = DIET_PLAN[srcDay].meals.find(m=>m.id===mealId);
+                const swapVal      = `${srcDay}_${mealId}`;
+                const isCurrent    = currentSw?.type==="day" && currentSw?.val===swapVal;
+                const assignedVals = getAssignedSwapVals(`${day}_${mealId}`);
+                const isAssigned   = assignedVals.includes(swapVal) && !isCurrent;
+                const isLogged2    = usedSwaps.includes(swapVal) && !isCurrent;
+                const isUsed       = isAssigned || isLogged2;
+                const srcPlan      = DIET_PLAN[srcDay];
+                // Also check: if srcDay's own meal slot is logged with a swap pointing here
+                const srcSlotLogged = logs[srcDay]?.[mealId];
+                const blocked      = isUsed || srcSlotLogged;
                 return (
-                  <div key={srcDay} onClick={()=>{ if(!isUsed&&!isLogged) applySwap(day,mealId,"day",swapVal); }} style={{ border:isCurrent?"2px solid #5A8A6A":isUsed?"1.5px dashed #D4C4B8":"1.5px solid #EDE0D4",background:isCurrent?"#F0F8F2":isUsed?"#F8F4F0":"#fff",borderRadius:14,padding:"12px 14px",marginBottom:10,cursor:isUsed||isLogged?"not-allowed":"pointer",opacity:isUsed?0.5:1 }}>
+                  <div key={srcDay} onClick={()=>{ if(!blocked&&!isLogged) applySwap(day,mealId,"day",swapVal); }} style={{ border:isCurrent?"2px solid #5A8A6A":blocked?"1.5px dashed #D4C4B8":"1.5px solid #EDE0D4",background:isCurrent?"#F0F8F2":blocked?"#F8F4F0":"#fff",borderRadius:14,padding:"12px 14px",marginBottom:10,cursor:blocked||isLogged?"not-allowed":"pointer",opacity:blocked?0.5:1 }}>
                     <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
                       <div style={{ width:8,height:8,borderRadius:"50%",background:srcPlan.color,flexShrink:0 }}/>
                       <span style={{ fontSize:11,fontWeight:700,color:srcPlan.color,textTransform:"uppercase",letterSpacing:0.8 }}>{srcDay}</span>
                       {srcPlan.isVeg && <span style={{ fontSize:10 }}>🌿</span>}
-                      {isCurrent && <span style={{ marginLeft:"auto",fontSize:10,color:"#5A8A6A",fontWeight:700 }}>✅ Selected</span>}
-                      {isUsed    && <span style={{ marginLeft:"auto",fontSize:10,color:"#B0907E" }}>🚫 Used</span>}
+                      {isCurrent    && <span style={{ marginLeft:"auto",fontSize:10,color:"#5A8A6A",fontWeight:700 }}>✅ Selected</span>}
+                      {isAssigned   && !isCurrent && <span style={{ marginLeft:"auto",fontSize:10,color:"#B0907E" }}>🚫 Used on another day</span>}
+                      {isLogged2    && !isAssigned && <span style={{ marginLeft:"auto",fontSize:10,color:"#B0907E" }}>🚫 Already logged</span>}
+                      {srcSlotLogged && !isUsed   && <span style={{ marginLeft:"auto",fontSize:10,color:"#B0907E" }}>🚫 That day's meal logged</span>}
                     </div>
-                    <p style={{ fontSize:13,color:isUsed?"#B0907E":"#2C1810",lineHeight:1.5 }}>{srcMeal.text}</p>
+                    <p style={{ fontSize:13,color:blocked?"#B0907E":"#2C1810",lineHeight:1.5 }}>{srcMeal.text}</p>
                   </div>
                 );
               })}
@@ -338,8 +383,11 @@ export default function DietTracker() {
               {altPool.length===0 ? (
                 <div style={{ textAlign:"center",padding:"24px 0",color:"#A08070",fontSize:13 }}>No alternatives available for this meal type.</div>
               ) : altPool.map(option=>{
-                const isCurrent = currentSw?.type==="alt" && currentSw?.val===option.id;
-                const isUsed    = usedSwaps.includes(option.id) && !isCurrent;
+                const isCurrent    = currentSw?.type==="alt" && currentSw?.val===option.id;
+                const assignedVals = getAssignedSwapVals(`${day}_${mealId}`);
+                const isAssigned   = assignedVals.includes(option.id) && !isCurrent;
+                const isLogged2    = usedSwaps.includes(option.id) && !isCurrent;
+                const isUsed       = isAssigned || isLogged2;
                 return (
                   <div key={option.id} onClick={()=>{ if(!isUsed&&!isLogged) applySwap(day,mealId,"alt",option.id); }} style={{ border:isCurrent?"2px solid #5A8A6A":isUsed?"1.5px dashed #D4C4B8":"1.5px solid #EDE0D4",background:isCurrent?"#F0F8F2":isUsed?"#F8F4F0":"#fff",borderRadius:14,padding:"12px 14px",marginBottom:10,cursor:isUsed||isLogged?"not-allowed":"pointer",opacity:isUsed?0.5:1,display:"flex",alignItems:"flex-start",gap:10 }}>
                     <div style={{ width:30,height:30,borderRadius:"50%",flexShrink:0,marginTop:1,background:isCurrent?"#5A8A6A":isUsed?"#D4C4B8":"#F0E4DA",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:isCurrent?"#fff":"#A08070" }}>
@@ -347,8 +395,9 @@ export default function DietTracker() {
                     </div>
                     <div style={{ flex:1 }}>
                       <p style={{ fontSize:13,color:isUsed?"#B0907E":"#2C1810",lineHeight:1.5 }}>{option.text}</p>
-                      {isCurrent && <p style={{ fontSize:10,color:"#5A8A6A",fontWeight:700,marginTop:3 }}>✅ Currently selected</p>}
-                      {isUsed    && <p style={{ fontSize:10,color:"#B0907E",marginTop:3 }}>🚫 Already used this week</p>}
+                      {isCurrent   && <p style={{ fontSize:10,color:"#5A8A6A",fontWeight:700,marginTop:3 }}>✅ Currently selected</p>}
+                      {isAssigned  && !isCurrent && <p style={{ fontSize:10,color:"#B0907E",marginTop:3 }}>🚫 Already assigned this week</p>}
+                      {isLogged2   && !isAssigned && <p style={{ fontSize:10,color:"#B0907E",marginTop:3 }}>🚫 Already used this week</p>}
                     </div>
                   </div>
                 );
@@ -368,7 +417,7 @@ export default function DietTracker() {
         <div onClick={e=>e.stopPropagation()} style={{ background:"#FDF6EC",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:430,padding:"20px 20px 36px",boxShadow:"0 -8px 40px rgba(44,24,16,0.2)" }}>
           <div style={{ width:36,height:4,background:"#D4C4B8",borderRadius:99,margin:"0 auto 16px" }}/>
           <h3 style={{ fontFamily:"'Playfair Display',serif",fontSize:20,color:"#2C1810",marginBottom:4 }}>⚙️ Reset & Week Options</h3>
-          <p style={{ fontSize:12,color:"#A08070",marginBottom:16 }}>Week {weekNum} · Manage your logs</p>
+          <p style={{ fontSize:12,color:"#A08070",marginBottom:16 }}>Week {weekNum} (Wed–Tue) · Manage your logs</p>
           {confirmReset ? (
             <div style={{ background:"#FFF0EE",border:"1px solid #F5C4BC",borderRadius:14,padding:16,marginBottom:12 }}>
               <p style={{ fontSize:14,fontWeight:600,color:"#C4756A",marginBottom:4 }}>
@@ -448,7 +497,7 @@ export default function DietTracker() {
         <div style={{ position:"absolute",bottom:-20,left:-10,width:100,height:100,borderRadius:"50%",background:"rgba(255,255,255,0.06)" }}/>
         <div style={{ position:"relative" }}>
           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4 }}>
-            <p style={{ color:"rgba(255,255,255,0.75)",fontSize:11,letterSpacing:2,textTransform:"uppercase" }}>Week {weekNum}</p>
+            <p style={{ color:"rgba(255,255,255,0.75)",fontSize:11,letterSpacing:2,textTransform:"uppercase" }}>Week {weekNum} · Wed–Tue</p>
             <div style={{ display:"flex",gap:8 }}>
               <button onClick={()=>setWeightModal(true)} style={{ border:"none",background:"rgba(255,255,255,0.2)",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#fff",cursor:"pointer" }}>⚖️ Weight</button>
               <button onClick={()=>setResetModal(true)}  style={{ border:"none",background:"rgba(255,255,255,0.2)",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#fff",cursor:"pointer" }}>⚙️ Reset</button>
