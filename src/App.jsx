@@ -364,12 +364,26 @@ export default function DietTracker() {
                   const srcMeal    = DIET_PLAN[srcDay].meals.find(m => m.id === mealId);
                   const swapVal    = srcDay + "_" + mealId;
                   const isCurrent  = currentSw && currentSw.type === "day" && currentSw.val === swapVal;
+
+                  // Rule 1: Block if this meal was already EATEN (logged) this week
                   const isEaten    = usedMeals.includes(swapVal) && !isCurrent;
-                  const srcSw      = swaps[srcDay + "_" + mealId];
-                  const srcEatKey  = srcSw && srcSw.type === "day" ? srcSw.val : srcSw && srcSw.type === "alt" ? srcSw.val : srcDay + "_" + mealId;
-                  const srcLogged  = !!(logs[srcDay] && logs[srcDay][mealId]);
-                  const srcEaten   = srcLogged && usedMeals.includes(srcEatKey);
-                  const blocked    = isEaten || (srcEaten && !isCurrent);
+
+                  // Rule 2: Block if another day (not the current day) already holds a swap WITH srcDay
+                  // e.g. Tuesday already swapped with Friday → Friday shows as "taken" to Thursday
+                  const takenByAnotherDay = !isCurrent && Object.keys(swaps).some(k => {
+                    if (k === day + "_" + mealId) return false; // ignore current day's own swap slot
+                    const s = swaps[k];
+                    return s && s.type === "day" && s.val === swapVal;
+                  });
+
+                  // Rule 3: Block if srcDay's meal was already eaten (logged after swap)
+                  const srcSw     = swaps[swapVal];
+                  const srcEatKey = srcSw && srcSw.type === "day" ? srcSw.val : srcSw && srcSw.type === "alt" ? srcSw.val : swapVal;
+                  const srcLogged = !!(logs[srcDay] && logs[srcDay][mealId]);
+                  const srcEaten  = srcLogged && usedMeals.includes(srcEatKey);
+
+                  const blocked   = isEaten || takenByAnotherDay || (srcEaten && !isCurrent);
+                  const blockMsg  = isEaten ? "Already eaten this week" : takenByAnotherDay ? "Already taken by another day" : srcEaten ? "That meal already eaten" : "";
                   const srcPlan    = DIET_PLAN[srcDay];
                   return (
                     <div key={srcDay} onClick={() => { if (!blocked && !isLogged) applySwap(day, mealId, "day", swapVal); }} style={{ border: isCurrent ? "2px solid #5A8A6A" : blocked ? "1.5px dashed #D4C4B8" : "1.5px solid #EDE0D4", background: isCurrent ? "#F0F8F2" : blocked ? "#F8F4F0" : "#fff", borderRadius: 14, padding: "12px 14px", marginBottom: 10, cursor: blocked || isLogged ? "not-allowed" : "pointer", opacity: blocked ? 0.5 : 1 }}>
@@ -378,8 +392,7 @@ export default function DietTracker() {
                         <span style={{ fontSize: 11, fontWeight: 700, color: srcPlan.color, textTransform: "uppercase" }}>{srcDay}</span>
                         {srcPlan.isVeg && <span style={{ fontSize: 10 }}>Veg</span>}
                         {isCurrent && <span style={{ marginLeft: "auto", fontSize: 10, color: "#5A8A6A", fontWeight: 700 }}>Selected</span>}
-                        {isEaten && !isCurrent && <span style={{ marginLeft: "auto", fontSize: 10, color: "#B0907E" }}>Already eaten</span>}
-                        {srcEaten && !isEaten && !isCurrent && <span style={{ marginLeft: "auto", fontSize: 10, color: "#B0907E" }}>That meal eaten</span>}
+                        {blocked && !isCurrent && <span style={{ marginLeft: "auto", fontSize: 10, color: "#B0907E" }}>{blockMsg}</span>}
                       </div>
                       <p style={{ fontSize: 13, color: blocked ? "#B0907E" : "#2C1810", lineHeight: 1.5 }}>{srcMeal.text}</p>
                     </div>
